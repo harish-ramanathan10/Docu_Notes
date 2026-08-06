@@ -12,7 +12,14 @@ export async function createNotebook(name: string) {
 }
 
 export async function getNotebooksAndChapters() {
-  const notebooks = await notebookService.listActiveNotebooks();
+  const supabase = await createClient();
+  const { data: notebooks, error } = await supabase
+    .from('notebooks')
+    .select('id, name, chapters(id, name, position)')
+    .eq('status', 'active')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
   return notebooks || [];
 }
 

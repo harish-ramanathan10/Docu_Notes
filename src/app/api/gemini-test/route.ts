@@ -17,15 +17,15 @@ export async function GET() {
   try {
     const ai = new GoogleGenAI({ apiKey });
     
-    // Using gemini-2.0-flash-lite as the standard Flash-Lite model
+    // Using gemini-3.1-flash-lite as the standard Flash-Lite model
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-lite',
+      model: 'gemini-3.1-flash-lite',
       contents: 'Hello! Please confirm you are working and print a 5-word welcome message.',
     });
 
     return NextResponse.json({
       success: true,
-      model: 'gemini-2.0-flash-lite',
+      model: 'gemini-3.1-flash-lite',
       text: response.text,
     });
   } catch (err: any) {

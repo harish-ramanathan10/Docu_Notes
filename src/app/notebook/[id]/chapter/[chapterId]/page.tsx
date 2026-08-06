@@ -22,6 +22,41 @@ interface Leaf {
   entry: any;
 }
 
+/* --- Inline icons, consistent with the rest of the app --- */
+const ChevronLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+  </svg>
+);
+
+const ChevronRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+  </svg>
+);
+
+// AI-generated fields often fill in filler like "None applicable" or
+// "No questions were worked through" when a section doesn't apply to a
+// given entry (e.g. a personal photo). Treat those as empty so the
+// leaf only shows sections that actually have content.
+const NOT_APPLICABLE_PATTERNS = [
+  /^none$/i,
+  /^n\/a$/i,
+  /^not applicable/i,
+  /none applicable/i,
+  /no questions/i,
+  /not present/i,
+  /does not (contain|apply|include)/i,
+  /this is (a|an) (personal )?(photo|photograph|image)/i,
+];
+
+function hasMeaningfulText(value?: string | null): boolean {
+  if (!value) return false;
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  return !NOT_APPLICABLE_PATTERNS.some((pattern) => pattern.test(trimmed));
+}
+
 export default function ChapterFlipBookPage() {
   const router = useRouter();
   const { id: notebookId, chapterId } = useParams() as { id: string; chapterId: string };
@@ -47,12 +82,15 @@ export default function ChapterFlipBookPage() {
   const [editSkills, setEditSkills] = useState('');
   const [editConcepts, setEditConcepts] = useState('');
   const [editQuestionLog, setEditQuestionLog] = useState('');
-  
+
   // Staged variables for dropdown selector context
   const [allNotebooks, setAllNotebooks] = useState<any[]>([]);
 
   // Page upload loading states
   const [uploadingPageForEntry, setUploadingPageForEntry] = useState<string | null>(null);
+
+  // Search bar state (positioned/styled to match the notebook detail page)
+  const [searchQuery, setSearchQuery] = useState('');
 
   async function loadChapterBook() {
     setLoading(true);
@@ -208,7 +246,7 @@ export default function ChapterFlipBookPage() {
   const handleAddPage = async (e: React.ChangeEvent<HTMLInputElement>, entry: any) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
-    
+
     setUploadingPageForEntry(entry.id);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -249,8 +287,8 @@ export default function ChapterFlipBookPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#07070d] text-white flex items-center justify-center font-sans">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-indigo-500" />
+      <div className="min-h-screen bg-[#F9F8F6] text-[#1C1C1C] flex items-center justify-center font-[Inter,sans-serif]">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-[#1C1C1C]" />
       </div>
     );
   }
@@ -262,469 +300,350 @@ export default function ChapterFlipBookPage() {
   const matchedEditNotebook = allNotebooks.find((n) => n.id === editNotebookId);
   const editChaptersList = matchedEditNotebook?.chapters || [];
 
-  return (
-    <main className="relative min-h-screen bg-[#07070d] text-white font-sans overflow-hidden flex flex-col justify-between">
-      {/* Background ambient glowing shapes */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-indigo-600/5 blur-[120px] pointer-events-none" />
-
-      {/* Header bar */}
-      <header className="relative border-b border-white/5 bg-[#0a0a14]/65 backdrop-blur-md px-8 py-4 flex justify-between items-center z-10">
-        <button
-          onClick={() => router.push(`/notebook/${notebookId}`)}
-          className="text-xs font-semibold text-gray-400 hover:text-white transition-all cursor-pointer"
+  // Shared entry-edit form (Source: same fields used for both leaves)
+  const renderEditForm = () => (
+    <div className="space-y-4 text-sm p-6">
+      <div>
+        <label className="block text-sm font-semibold text-[#1C1C1C] mb-1">Title</label>
+        <input
+          type="text"
+          value={editTitle}
+          onChange={(e) => setEditTitle(e.target.value)}
+          className="w-full px-3 py-2 rounded-md bg-[#F9F8F6] border border-[#8E8E93]/25 text-[#1C1C1C] text-sm focus:outline-none focus:border-[#1C1C1C] transition-all duration-200 ease-out"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-[#1C1C1C] mb-1">Type</label>
+        <select
+          value={editType}
+          onChange={(e: any) => setEditType(e.target.value)}
+          className="w-full px-3 py-2 rounded-md bg-[#F9F8F6] border border-[#8E8E93]/25 text-[#1C1C1C] text-sm focus:outline-none focus:border-[#1C1C1C] transition-all duration-200 ease-out"
         >
-          &larr; Back to Chapter List
+          <option value="Practice">Practice</option>
+          <option value="Course Notes">Course Notes</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-semibold text-[#1C1C1C] mb-1">Notebook</label>
+          <select
+            value={editNotebookId}
+            onChange={(e) => {
+              setEditNotebookId(e.target.value);
+              setEditChapterId('');
+            }}
+            className="w-full px-3 py-2 rounded-md bg-[#F9F8F6] border border-[#8E8E93]/25 text-[#1C1C1C] text-sm focus:outline-none focus:border-[#1C1C1C] transition-all duration-200 ease-out"
+          >
+            {allNotebooks.map((n) => (
+              <option key={n.id} value={n.id}>{n.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-[#1C1C1C] mb-1">Chapter</label>
+          <select
+            value={editChapterId}
+            onChange={(e) => setEditChapterId(e.target.value)}
+            className="w-full px-3 py-2 rounded-md bg-[#F9F8F6] border border-[#8E8E93]/25 text-[#1C1C1C] text-sm focus:outline-none focus:border-[#1C1C1C] transition-all duration-200 ease-out"
+          >
+            <option value="">-- Unassigned --</option>
+            {editChaptersList.map((c: any) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-[#1C1C1C] mb-1">Description</label>
+        <textarea
+          value={editDesc}
+          onChange={(e) => setEditDesc(e.target.value)}
+          rows={2}
+          className="w-full px-3 py-2 rounded-md bg-[#F9F8F6] border border-[#8E8E93]/25 text-[#1C1C1C] text-sm focus:outline-none focus:border-[#1C1C1C] transition-all duration-200 ease-out"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-[#1C1C1C] mb-1">Skills &amp; Concepts</label>
+        <textarea
+          value={editSkills}
+          onChange={(e) => setEditSkills(e.target.value)}
+          rows={1}
+          className="w-full px-3 py-2 rounded-md bg-[#F9F8F6] border border-[#8E8E93]/25 text-[#1C1C1C] text-sm focus:outline-none focus:border-[#1C1C1C] transition-all duration-200 ease-out"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-[#1C1C1C] mb-1">Question Log</label>
+        <textarea
+          value={editQuestionLog}
+          onChange={(e) => setEditQuestionLog(e.target.value)}
+          rows={1}
+          className="w-full px-3 py-2 rounded-md bg-[#F9F8F6] border border-[#8E8E93]/25 text-[#1C1C1C] text-sm focus:outline-none focus:border-[#1C1C1C] transition-all duration-200 ease-out"
+        />
+      </div>
+      <div className="flex gap-2 pt-2">
+        <button
+          onClick={() => setEditingEntryId(null)}
+          className="flex-1 py-2 rounded-md border border-[#1C1C1C]/10 text-[#1C1C1C] text-sm font-semibold hover:bg-[#F9F8F6] transition-all duration-200 ease-out"
+        >
+          Cancel
         </button>
-        <span className="text-xs font-bold text-gray-500">
-          Leaf {leftIndex + 1} - {Math.min(leftIndex + 2, leaves.length + 1)} of {leaves.length + 1}
-        </span>
+        <button
+          onClick={handleSaveEdit}
+          className="flex-1 py-2 rounded-md bg-[#1C1C1C] text-white text-sm font-semibold hover:opacity-90 transition-all duration-200 ease-out"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderDescriptionLeaf = (leaf: Leaf) => (
+    <div className="h-full flex flex-col justify-between p-6">
+      <div className="space-y-4">
+        <div className="flex justify-between items-start">
+          <span className="text-[10px] px-2 py-1 rounded-md bg-[#F9F8F6] border border-[#1C1C1C]/10 text-[#1C1C1C] font-bold uppercase tracking-wider">
+            {leaf.entry.entry_type}
+          </span>
+          <button
+            onClick={() => startEditing(leaf)}
+            aria-label="Edit entry"
+            className="w-10 h-10 flex items-center justify-center rounded-md bg-[#F9F8F6] border border-[#1C1C1C]/10 text-[#1C1C1C] hover:bg-white transition-all duration-200 ease-out"
+          >
+            <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-[#1C1C1C] leading-tight">{leaf.entry.title}</h3>
+          <p className="text-[10px] uppercase tracking-wider text-[#797676] mt-1.5 font-bold">
+            Captured {new Date(leaf.entry.created_at).toLocaleDateString()}
+          </p>
+        </div>
+        <div className="space-y-4">
+          {hasMeaningfulText(leaf.entry.description) && (
+            <div>
+              <span className="block text-[10px] text-[#797676] uppercase tracking-wider mb-1.5 font-bold">Summary</span>
+              <p className="text-sm text-[#1C1C1C] leading-relaxed">{leaf.entry.description}</p>
+            </div>
+          )}
+          {hasMeaningfulText(leaf.entry.skills_and_concepts) && (
+            <div>
+              <span className="block text-[10px] text-[#797676] uppercase tracking-wider mb-1.5 font-bold">Skills demonstrated</span>
+              <p className="text-sm text-[#1C1C1C] leading-relaxed">{leaf.entry.skills_and_concepts}</p>
+            </div>
+          )}
+          {hasMeaningfulText(leaf.entry.question_log) && (
+            <div>
+              <span className="block text-[10px] text-[#797676] uppercase tracking-wider mb-1.5 font-bold">Question Log</span>
+              <p className="text-sm text-[#1C1C1C] leading-relaxed">{leaf.entry.question_log}</p>
+            </div>
+          )}
+          {!hasMeaningfulText(leaf.entry.description) &&
+            !hasMeaningfulText(leaf.entry.skills_and_concepts) &&
+            !hasMeaningfulText(leaf.entry.question_log) && (
+              <p className="text-sm text-[#8E8E93] italic">No notes for this entry.</p>
+            )}
+        </div>
+      </div>
+
+      {/* Document management tray */}
+      <div className="border-t border-[#1C1C1C]/10 pt-4 mt-6 flex justify-end items-center">
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploadingPageForEntry === leaf.entryId}
+          className="px-4 py-2 rounded-md bg-[#F9F8F6] border border-[#1C1C1C]/10 text-[#1C1C1C] hover:bg-white text-sm font-semibold disabled:opacity-50 transition-all duration-200 ease-out"
+        >
+          {uploadingPageForEntry === leaf.entryId ? 'Adding...' : '+ Add Page'}
+        </button>
+        <input
+          type="file"
+          accept="image/*"
+          ref={fileInputRef}
+          onChange={(e) => handleAddPage(e, leaf.entry)}
+          className="hidden"
+        />
+      </div>
+    </div>
+  );
+
+  const renderPageLeaf = (leaf: Leaf) => (
+    <div className="h-full flex flex-col relative">
+      <div className="flex-1 w-full overflow-y-auto relative group flex items-start justify-center">
+        <img
+          src={leaf.imageUrl}
+          alt="Page leaf"
+          onClick={() => setZoomImg(leaf.imageUrl || null)}
+          className="w-full h-auto object-contain cursor-zoom-in"
+        />
+        <button
+          onClick={() => handleDeletePage(leaf.docId!, leaf.entryId)}
+          aria-label="Delete page"
+          title="Delete Page"
+          className="absolute bottom-3 right-3 w-10 h-10 flex items-center justify-center rounded-md bg-[#B3261E] text-white opacity-0 group-hover:opacity-100 hover:opacity-90 transition-all duration-200 ease-out z-10"
+        >
+          <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="text-[10px] uppercase tracking-wider flex justify-between items-center text-[#797676] font-bold bg-white/90 backdrop-blur-sm px-3 py-1.5">
+        <span>Page {leaf.position}</span>
+        <span>Click to zoom</span>
+      </div>
+    </div>
+  );
+
+  return (
+    <main className="min-h-screen bg-[#F9F8F6] text-[#1C1C1C] font-[Inter,sans-serif] flex flex-col">
+      {/* Header bar */}
+      <header className="border-b border-[#1C1C1C]/10 bg-white px-8 py-4 flex items-center gap-6">
+        <button
+          onClick={() => router.push('/')}
+          className="flex items-center gap-2 shrink-0"
+        >
+          <div
+            className="w-7 h-7 bg-[#1C1C1C]"
+            style={{
+              WebkitMaskImage: 'url(/DocuNotesLogo.png)',
+              maskImage: 'url(/DocuNotesLogo.png)',
+              WebkitMaskSize: 'contain',
+              maskSize: 'contain',
+              WebkitMaskRepeat: 'no-repeat',
+              maskRepeat: 'no-repeat',
+            }}
+          />
+          <span className="text-xl font-bold tracking-tight font-[\'Source_Serif_4\',serif]">
+            DocuNotes
+          </span>
+        </button>
+
+        <div className="flex-1 max-w-md">
+          <div className="relative">
+            <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8E8E93]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search notes..."
+              className="w-full pl-9 pr-3 py-2 rounded-md bg-[#F9F8F6] border border-[#8E8E93]/25 text-sm text-[#1C1C1C] placeholder:text-[#8E8E93] focus:outline-none focus:border-[#1C1C1C] transition-all duration-200 ease-out"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 ml-auto">
+          <button
+            onClick={() => router.push(`/notebook/${notebookId}`)}
+            className="px-4 py-2.5 rounded-md bg-white border border-[#1C1C1C]/10 text-[#1C1C1C] text-sm font-semibold hover:bg-[#F9F8F6] transition-all duration-200 ease-out"
+          >
+            &larr; Back to Chapter List
+          </button>
+        </div>
       </header>
 
-      {/* Flip book space */}
-      {leaves.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center text-gray-500">
-            <p className="text-sm">No entries filed in this chapter yet.</p>
+      {/* Content */}
+      <div className="flex-1 w-full mx-auto px-8 py-10 flex flex-col">
+        {leaves.length === 0 ? (
+          <div className="max-w-6xl w-full mx-auto bg-white border border-[#1C1C1C]/10 rounded-md p-7 text-left">
+            <p className="text-base text-[#797676] mb-4">No entries filed in this chapter yet.</p>
             <button
               onClick={() => router.push('/capture')}
-              className="mt-4 px-5 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 font-semibold text-xs text-white"
+              className="px-4 py-2.5 rounded-md bg-[#1C1C1C] text-white text-sm font-semibold hover:opacity-90 transition-all duration-200 ease-out"
             >
               Go Capture Notes
             </button>
           </div>
-        </div>
-      ) : (
-        <section className="flex-1 flex flex-col justify-center items-center py-6 px-4 md:px-8 max-w-6xl w-full mx-auto relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full h-[72vh] max-h-[700px] border border-white/5 bg-[#0d0d19]/30 rounded-3xl p-4 md:p-6 shadow-2xl relative">
-            
-            {/* Split page center divider */}
-            <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-[1px] bg-white/5 z-20" />
+        ) : (
+          <section className="flex-1 flex flex-col items-center justify-center w-full">
+            <p className="text-[10px] uppercase tracking-wider text-[#797676] font-bold mb-3">
+              Leaf {leftIndex + 1}&ndash;{Math.min(leftIndex + 2, leaves.length + 1)} of {leaves.length + 1}
+            </p>
 
-            {/* LEFT LEAF */}
-            <div className="bg-[#111122]/40 border border-white/5 rounded-2xl p-6 overflow-y-auto flex flex-col justify-between">
-              {leftLeaf ? (
-                leftLeaf.type === 'description' ? (
-                  // Description leaf render
-                  editingEntryId === leftLeaf.entryId ? (
-                    // Edit mode
-                    <div className="space-y-3.5 text-xs">
-                      <div>
-                        <label className="block text-gray-500 mb-1">Title</label>
-                        <input
-                          type="text"
-                          value={editTitle}
-                          onChange={(e) => setEditTitle(e.target.value)}
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/10 text-white focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-gray-500 mb-1">Type</label>
-                        <select
-                          value={editType}
-                          onChange={(e: any) => setEditType(e.target.value)}
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/10 text-white focus:outline-none"
-                        >
-                          <option value="Practice" className="bg-[#0e0e1a]">Practice</option>
-                          <option value="Course Notes" className="bg-[#0e0e1a]">Course Notes</option>
-                          <option value="Other" className="bg-[#0e0e1a]">Other</option>
-                        </select>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-gray-500 mb-1">Notebook</label>
-                          <select
-                            value={editNotebookId}
-                            onChange={(e) => {
-                              setEditNotebookId(e.target.value);
-                              setEditChapterId('');
-                            }}
-                            className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/10 text-white focus:outline-none"
-                          >
-                            {allNotebooks.map((n) => (
-                              <option key={n.id} value={n.id} className="bg-[#0e0e1a]">{n.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-gray-500 mb-1">Chapter</label>
-                          <select
-                            value={editChapterId}
-                            onChange={(e) => setEditChapterId(e.target.value)}
-                            className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/10 text-white focus:outline-none"
-                          >
-                            <option value="" className="bg-[#0e0e1a]">-- Unassigned --</option>
-                            {editChaptersList.map((c: any) => (
-                              <option key={c.id} value={c.id} className="bg-[#0e0e1a]">{c.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-gray-500 mb-1">Description</label>
-                        <textarea
-                          value={editDesc}
-                          onChange={(e) => setEditDesc(e.target.value)}
-                          rows={2}
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/10 text-white focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-gray-500 mb-1">Skills &amp; Concepts</label>
-                        <textarea
-                          value={editSkills}
-                          onChange={(e) => setEditSkills(e.target.value)}
-                          rows={1}
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/10 text-white focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-gray-500 mb-1">Question Log</label>
-                        <textarea
-                          value={editQuestionLog}
-                          onChange={(e) => setEditQuestionLog(e.target.value)}
-                          rows={1}
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/10 text-white focus:outline-none"
-                        />
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                        <button
-                          onClick={() => setEditingEntryId(null)}
-                          className="flex-1 py-1.5 rounded-lg border border-white/10 font-semibold"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={handleSaveEdit}
-                          className="flex-1 py-1.5 rounded-lg bg-indigo-500 font-semibold"
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </div>
+            {/* Book spread — spans the full width of the content column */}
+            <div className="grid grid-cols-1 md:grid-cols-2 w-full h-[76vh] max-h-[760px] bg-white border border-[#1C1C1C]/10 rounded-md shadow-[0_1px_0_0_rgba(28,28,28,0.04)] relative">
+
+              {/* Spine down the center */}
+              <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#1C1C1C]/15 to-transparent z-10" />
+              <div className="hidden md:block absolute left-1/2 top-0 bottom-0 -translate-x-3 w-6 bg-gradient-to-r from-transparent to-[#1C1C1C]/[0.03] z-[5]" />
+              <div className="hidden md:block absolute left-1/2 top-0 bottom-0 translate-x-3 w-6 -ml-6 bg-gradient-to-l from-transparent to-[#1C1C1C]/[0.03] z-[5]" />
+
+              {/* LEFT LEAF */}
+              <div className="overflow-y-auto flex flex-col">
+                {leftLeaf ? (
+                  leftLeaf.type === 'description' ? (
+                    editingEntryId === leftLeaf.entryId ? renderEditForm() : renderDescriptionLeaf(leftLeaf)
                   ) : (
-                    // Read mode description card
-                    <div className="h-full flex flex-col justify-between">
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-start">
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-bold uppercase">
-                            {leftLeaf.entry.entry_type}
-                          </span>
-                          <button
-                            onClick={() => startEditing(leftLeaf)}
-                            className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold"
-                          >
-                            Edit Entry
-                          </button>
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-white leading-tight">{leftLeaf.entry.title}</h3>
-                          <p className="text-[10px] text-gray-500 mt-1">
-                            Captured: {new Date(leftLeaf.entry.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <p className="text-xs text-gray-300 leading-relaxed border-l-2 border-white/10 pl-3 italic">
-                          {leftLeaf.entry.description}
-                        </p>
-                        {leftLeaf.entry.skills_and_concepts && (
-                          <div>
-                            <span className="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-bold">Skills demonstrated</span>
-                            <p className="text-xs text-gray-300 leading-relaxed">{leftLeaf.entry.skills_and_concepts}</p>
-                          </div>
-                        )}
-                        {leftLeaf.entry.question_log && (
-                          <div>
-                            <span className="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-bold">Question Log</span>
-                            <p className="text-xs text-gray-300 leading-relaxed">{leftLeaf.entry.question_log}</p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Document management tray */}
-                      <div className="border-t border-white/5 pt-4 mt-6 flex justify-between items-center text-xs">
-                        <span className="text-gray-500">Pages: {leftLeaf.entry.documents?.length || 0}</span>
-                        
-                        <button
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={uploadingPageForEntry === leftLeaf.entryId}
-                          className="px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/[0.04] text-xs font-semibold cursor-pointer disabled:opacity-50"
-                        >
-                          {uploadingPageForEntry === leftLeaf.entryId ? 'Adding...' : '+ Add Page'}
-                        </button>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          ref={fileInputRef}
-                          onChange={(e) => handleAddPage(e, leftLeaf.entry)}
-                          className="hidden"
-                        />
-                      </div>
-                    </div>
+                    renderPageLeaf(leftLeaf)
                   )
                 ) : (
-                  // Document Page leaf render
-                  <div className="h-full flex flex-col justify-between">
-                    <div className="flex-1 flex items-center justify-center relative group">
-                      <img
-                        src={leftLeaf.imageUrl}
-                        alt={`Page leaf`}
-                        onClick={() => setZoomImg(leftLeaf.imageUrl || null)}
-                        className="max-h-[80%] max-w-full rounded-lg object-contain shadow-lg cursor-zoom-in transition-all group-hover:scale-[1.01]"
-                      />
-                      <button
-                        onClick={() => handleDeletePage(leftLeaf.docId!, leftLeaf.entryId)}
-                        className="absolute bottom-2 right-2 p-2 rounded bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                        title="Delete Page"
-                      >
-                        Delete Page
-                      </button>
-                    </div>
+                  <div className="text-[#797676] text-sm text-center m-auto">Empty page</div>
+                )}
+              </div>
 
-                    <div className="text-[10px] border-t border-white/5 pt-2 flex justify-between items-center text-gray-500">
-                      <span>Document Page {leftLeaf.position}</span>
-                      <span className="font-semibold text-gray-400 italic">Click image to zoom</span>
-                    </div>
-                  </div>
-                )
-              ) : (
-                <div className="text-gray-500 text-center">Empty page</div>
-              )}
-            </div>
-
-            {/* RIGHT LEAF */}
-            <div className="bg-[#111122]/40 border border-white/5 rounded-2xl p-6 overflow-y-auto flex flex-col justify-between">
-              {rightLeaf ? (
-                rightLeaf.type === 'description' ? (
-                  // Description leaf render
-                  editingEntryId === rightLeaf.entryId ? (
-                    // Edit mode
-                    <div className="space-y-3.5 text-xs">
-                      <div>
-                        <label className="block text-gray-500 mb-1">Title</label>
-                        <input
-                          type="text"
-                          value={editTitle}
-                          onChange={(e) => setEditTitle(e.target.value)}
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/10 text-white focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-gray-500 mb-1">Type</label>
-                        <select
-                          value={editType}
-                          onChange={(e: any) => setEditType(e.target.value)}
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/10 text-white focus:outline-none"
-                        >
-                          <option value="Practice" className="bg-[#0e0e1a]">Practice</option>
-                          <option value="Course Notes" className="bg-[#0e0e1a]">Course Notes</option>
-                          <option value="Other" className="bg-[#0e0e1a]">Other</option>
-                        </select>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-gray-500 mb-1">Notebook</label>
-                          <select
-                            value={editNotebookId}
-                            onChange={(e) => {
-                              setEditNotebookId(e.target.value);
-                              setEditChapterId('');
-                            }}
-                            className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/10 text-white focus:outline-none"
-                          >
-                            {allNotebooks.map((n) => (
-                              <option key={n.id} value={n.id} className="bg-[#0e0e1a]">{n.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-gray-500 mb-1">Chapter</label>
-                          <select
-                            value={editChapterId}
-                            onChange={(e) => setEditChapterId(e.target.value)}
-                            className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/10 text-white focus:outline-none"
-                          >
-                            <option value="" className="bg-[#0e0e1a]">-- Unassigned --</option>
-                            {editChaptersList.map((c: any) => (
-                              <option key={c.id} value={c.id} className="bg-[#0e0e1a]">{c.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-gray-500 mb-1">Description</label>
-                        <textarea
-                          value={editDesc}
-                          onChange={(e) => setEditDesc(e.target.value)}
-                          rows={2}
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/10 text-white focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-gray-500 mb-1">Skills &amp; Concepts</label>
-                        <textarea
-                          value={editSkills}
-                          onChange={(e) => setEditSkills(e.target.value)}
-                          rows={1}
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/10 text-white focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-gray-500 mb-1">Question Log</label>
-                        <textarea
-                          value={editQuestionLog}
-                          onChange={(e) => setEditQuestionLog(e.target.value)}
-                          rows={1}
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/10 text-white focus:outline-none"
-                        />
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                        <button
-                          onClick={() => setEditingEntryId(null)}
-                          className="flex-1 py-1.5 rounded-lg border border-white/10 font-semibold"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={handleSaveEdit}
-                          className="flex-1 py-1.5 rounded-lg bg-indigo-500 font-semibold"
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </div>
+              {/* RIGHT LEAF */}
+              <div className="overflow-y-auto flex flex-col border-t md:border-t-0 border-[#1C1C1C]/10">
+                {rightLeaf ? (
+                  rightLeaf.type === 'description' ? (
+                    editingEntryId === rightLeaf.entryId ? renderEditForm() : renderDescriptionLeaf(rightLeaf)
                   ) : (
-                    // Read mode description card
-                    <div className="h-full flex flex-col justify-between">
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-start">
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-bold uppercase">
-                            {rightLeaf.entry.entry_type}
-                          </span>
-                          <button
-                            onClick={() => startEditing(rightLeaf)}
-                            className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold"
-                          >
-                            Edit Entry
-                          </button>
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-white leading-tight">{rightLeaf.entry.title}</h3>
-                          <p className="text-[10px] text-gray-500 mt-1">
-                            Captured: {new Date(rightLeaf.entry.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <p className="text-xs text-gray-300 leading-relaxed border-l-2 border-white/10 pl-3 italic">
-                          {rightLeaf.entry.description}
-                        </p>
-                        {rightLeaf.entry.skills_and_concepts && (
-                          <div>
-                            <span className="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-bold">Skills demonstrated</span>
-                            <p className="text-xs text-gray-300 leading-relaxed">{rightLeaf.entry.skills_and_concepts}</p>
-                          </div>
-                        )}
-                        {rightLeaf.entry.question_log && (
-                          <div>
-                            <span className="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-bold">Question Log</span>
-                            <p className="text-xs text-gray-300 leading-relaxed">{rightLeaf.entry.question_log}</p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Document management tray */}
-                      <div className="border-t border-white/5 pt-4 mt-6 flex justify-between items-center text-xs">
-                        <span className="text-gray-500">Pages: {rightLeaf.entry.documents?.length || 0}</span>
-                        
-                        <button
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={uploadingPageForEntry === rightLeaf.entryId}
-                          className="px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/[0.04] text-xs font-semibold cursor-pointer disabled:opacity-50"
-                        >
-                          {uploadingPageForEntry === rightLeaf.entryId ? 'Adding...' : '+ Add Page'}
-                        </button>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          ref={fileInputRef}
-                          onChange={(e) => handleAddPage(e, rightLeaf.entry)}
-                          className="hidden"
-                        />
-                      </div>
-                    </div>
+                    renderPageLeaf(rightLeaf)
                   )
                 ) : (
-                  // Document Page leaf render
-                  <div className="h-full flex flex-col justify-between">
-                    <div className="flex-1 flex items-center justify-center relative group">
-                      <img
-                        src={rightLeaf.imageUrl}
-                        alt={`Page leaf`}
-                        onClick={() => setZoomImg(rightLeaf.imageUrl || null)}
-                        className="max-h-[80%] max-w-full rounded-lg object-contain shadow-lg cursor-zoom-in transition-all group-hover:scale-[1.01]"
-                      />
-                      <button
-                        onClick={() => handleDeletePage(rightLeaf.docId!, rightLeaf.entryId)}
-                        className="absolute bottom-2 right-2 p-2 rounded bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                        title="Delete Page"
-                      >
-                        Delete Page
-                      </button>
-                    </div>
-
-                    <div className="text-[10px] border-t border-white/5 pt-2 flex justify-between items-center text-gray-500">
-                      <span>Document Page {rightLeaf.position}</span>
-                      <span className="font-semibold text-gray-400 italic">Click image to zoom</span>
-                    </div>
+                  // End of chapter marker leaf
+                  <div className="h-full flex flex-col justify-center items-center text-center p-6 m-auto">
+                    <svg className="w-10 h-10 text-[#1C1C1C]/40 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    <h4 className="text-sm font-bold text-[#1C1C1C]">End of Chapter</h4>
+                    <p className="text-[10px] uppercase tracking-wider text-[#797676] font-bold mt-1 max-w-[160px]">
+                      You&apos;ve reached the last document
+                    </p>
                   </div>
-                )
-              ) : (
-                // End of chapter marker leaf
-                <div className="h-full flex flex-col justify-center items-center text-center p-6 border-2 border-dashed border-white/5 rounded-2xl">
-                  <svg className="w-10 h-10 text-indigo-500/40 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                  <h4 className="text-sm font-bold text-gray-300">End of Chapter</h4>
-                  <p className="text-[10px] text-gray-500 mt-1 max-w-[160px]">
-                    You have flipped through all documents in this section.
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
+
             </div>
 
-          </div>
-
-          {/* Book navigation controls */}
-          <div className="flex gap-4 items-center justify-center mt-6">
-            <button
-              onClick={handleFlipBackward}
-              disabled={leftIndex === 0}
-              className="px-6 py-2.5 rounded-xl border border-white/10 hover:bg-white/[0.04] text-xs font-semibold disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all"
-            >
-              &larr; Flip Back
-            </button>
-            <button
-              onClick={handleFlipForward}
-              disabled={leftIndex >= leaves.length}
-              className="px-6 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-xs font-semibold disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shadow-lg shadow-indigo-500/10 transition-all"
-            >
-              Flip Forward &rarr;
-            </button>
-          </div>
-        </section>
-      )}
+            {/* Book navigation controls */}
+            <div className="flex gap-2 items-center justify-center mt-6">
+              <button
+                onClick={handleFlipBackward}
+                disabled={leftIndex === 0}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-md bg-white border border-[#1C1C1C]/10 text-[#1C1C1C] text-sm font-semibold hover:bg-[#F9F8F6] disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 ease-out"
+              >
+                <ChevronLeftIcon className="w-4 h-4" />
+                Previous Page
+              </button>
+              <button
+                onClick={handleFlipForward}
+                disabled={leftIndex >= leaves.length}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-md bg-[#1C1C1C] text-white text-sm font-semibold hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 ease-out"
+              >
+                Next Page
+                <ChevronRightIcon className="w-4 h-4" />
+              </button>
+            </div>
+          </section>
+        )}
+      </div>
 
       {/* Fullscreen Zoom modal */}
       {zoomImg && (
         <div
-          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 cursor-zoom-out"
+          className="fixed inset-0 z-50 bg-[#1C1C1C]/90 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out"
           onClick={() => setZoomImg(null)}
         >
           <img
             src={zoomImg}
             alt="Fullscreen zoom"
-            className="max-h-full max-w-full object-contain rounded-xl shadow-2xl"
+            className="max-h-full max-w-full object-contain rounded-md"
           />
         </div>
       )}
-      <div className="h-6" />
     </main>
   );
 }

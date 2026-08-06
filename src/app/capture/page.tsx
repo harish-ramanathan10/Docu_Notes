@@ -11,6 +11,86 @@ import {
   appendToExistingEntry,
 } from './actions';
 
+/* --- Inline icons, consistent with the rest of the app --- */
+const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19 12H5M12 19l-7-7 7-7" />
+  </svg>
+);
+
+const ChevronUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M18 15l-6-6-6 6" />
+  </svg>
+);
+
+const ChevronDownIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+  </svg>
+);
+
+const TrashIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"
+    />
+  </svg>
+);
+
+const LogOutIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"
+    />
+  </svg>
+);
+
+const CameraIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+    />
+    <circle cx="12" cy="13" r="3.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const CheckIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+  </svg>
+);
+
+const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M18 6L6 18M6 6l12 12" />
+  </svg>
+);
+
+const ImagesIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
+    <rect x="3" y="3" width="14" height="14" rx="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h11a2 2 0 002-2V8" />
+  </svg>
+);
+
+const Spinner = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg className="animate-spin" viewBox="0 0 24 24" fill="none" {...props}>
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+    <path
+      className="opacity-75"
+      fill="currentColor"
+      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+    />
+  </svg>
+);
+
 interface StagedImage {
   id: string;
   file: File;
@@ -36,7 +116,6 @@ export default function CapturePage() {
   const supabase = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Desktop check redirect
   useEffect(() => {
     const checkDevice = () => {
       if (window.innerWidth >= 768) {
@@ -48,23 +127,19 @@ export default function CapturePage() {
     return () => window.removeEventListener('resize', checkDevice);
   }, [router]);
 
-  // App States
   const [stagedImages, setStagedImages] = useState<StagedImage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [step, setStep] = useState<'capture' | 'review'>('capture');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Bottom drawer for reviewing staged list
   const [showStagedDrawer, setShowStagedDrawer] = useState(false);
 
-  // Db Context States
   const [notebooks, setNotebooks] = useState<any[]>([]);
   const [existingEntries, setExistingEntries] = useState<any[]>([]);
   const [targetMode, setTargetMode] = useState<'new' | 'append'>('new');
   const [targetEntryId, setTargetEntryId] = useState<string>('');
 
-  // AI & Form Fields State
   const [aiData, setAiData] = useState<AIResult | null>(null);
   const [formTitle, setFormTitle] = useState('');
   const [formDescription, setFormDescription] = useState('');
@@ -77,7 +152,94 @@ export default function CapturePage() {
   const [rawTexts, setRawTexts] = useState<string[]>([]);
   const [expandedRawTextIndex, setExpandedRawTextIndex] = useState<number | null>(null);
 
-  // Load Notebooks & Entries for Dropdowns
+
+
+  const rotateLastImage = async () => {
+    if (stagedImages.length === 0) return;
+    const lastIndex = stagedImages.length - 1;
+    const target = stagedImages[lastIndex];
+
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.height;
+      canvas.height = img.width;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate((90 * Math.PI) / 180);
+      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const newFile = new File([blob], target.file.name, { type: 'image/jpeg' });
+        setStagedImages(prev => prev.map((item, idx) => {
+          if (idx === lastIndex) {
+            URL.revokeObjectURL(item.previewUrl);
+            return {
+              ...item,
+              file: newFile,
+              previewUrl: URL.createObjectURL(newFile),
+              compressedSizeKb: Math.round(newFile.size / 1024),
+            };
+          }
+          return item;
+        }));
+      }, 'image/jpeg', 0.85);
+    };
+    img.src = target.previewUrl;
+  };
+
+  const cropLastImage = async () => {
+    if (stagedImages.length === 0) return;
+    const lastIndex = stagedImages.length - 1;
+    const target = stagedImages[lastIndex];
+
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const targetAspect = 8.5 / 11;
+      const currentAspect = img.width / img.height;
+
+      let sourceWidth = img.width;
+      let sourceHeight = img.height;
+      let xOffset = 0;
+      let yOffset = 0;
+
+      if (currentAspect > targetAspect) {
+        sourceWidth = img.height * targetAspect;
+        xOffset = (img.width - sourceWidth) / 2;
+      } else {
+        sourceHeight = img.width / targetAspect;
+        yOffset = (img.height - sourceHeight) / 2;
+      }
+
+      canvas.width = 850;
+      canvas.height = 1100;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(img, xOffset, yOffset, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const newFile = new File([blob], target.file.name, { type: 'image/jpeg' });
+        setStagedImages(prev => prev.map((item, idx) => {
+          if (idx === lastIndex) {
+            URL.revokeObjectURL(item.previewUrl);
+            return {
+              ...item,
+              file: newFile,
+              previewUrl: URL.createObjectURL(newFile),
+              compressedSizeKb: Math.round(newFile.size / 1024),
+            };
+          }
+          return item;
+        }));
+      }, 'image/jpeg', 0.85);
+    };
+    img.src = target.previewUrl;
+  };
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -92,11 +254,9 @@ export default function CapturePage() {
     loadData();
   }, []);
 
-  // Handle image capture and compression
   const handleImageCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const files = Array.from(e.target.files);
-
     const compressedImages: StagedImage[] = [];
 
     for (const file of files) {
@@ -126,18 +286,19 @@ export default function CapturePage() {
     }
 
     setStagedImages((prev) => [...prev, ...compressedImages]);
+
+    // Reset the input so selecting/capturing the same or another photo
+    // again always fires onChange (browsers won't fire change on an
+    // identical file list otherwise).
+    e.target.value = '';
   };
 
   const removeStagedImage = (id: string) => {
     setStagedImages((prev) => {
       const imageToRemove = prev.find((img) => img.id === id);
-      if (imageToRemove) {
-        URL.revokeObjectURL(imageToRemove.previewUrl);
-      }
+      if (imageToRemove) URL.revokeObjectURL(imageToRemove.previewUrl);
       const updated = prev.filter((img) => img.id !== id);
-      if (updated.length === 0) {
-        setShowStagedDrawer(false);
-      }
+      if (updated.length === 0) setShowStagedDrawer(false);
       return updated;
     });
   };
@@ -154,7 +315,6 @@ export default function CapturePage() {
     setStagedImages(newImages);
   };
 
-  // Upload compressed images to storage, run Gemini pipeline
   const processCapturedPages = async () => {
     if (stagedImages.length === 0) return;
 
@@ -168,7 +328,6 @@ export default function CapturePage() {
 
       const uploadedPaths: string[] = [];
 
-      // 1. Upload files
       for (let i = 0; i < stagedImages.length; i++) {
         const image = stagedImages[i];
         const fileName = `${user.id}/${Date.now()}_page_${i + 1}.jpg`;
@@ -184,7 +343,6 @@ export default function CapturePage() {
         uploadedPaths.push(data.path);
       }
 
-      // 2. Call process API
       const res = await fetch('/api/process-entry', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -196,7 +354,6 @@ export default function CapturePage() {
 
       const result: AIResult = json.data;
 
-      // 3. Pre-populate review forms
       setAiData(result);
       setFormTitle(result.title || '');
       setFormDescription(result.description || '');
@@ -264,12 +421,10 @@ export default function CapturePage() {
         });
       }
 
-      // Clear staged images state
       setStagedImages([]);
       setStep('capture');
       setAiData(null);
       setErrorMsg(null);
-      alert('Entry saved and uploaded successfully!');
     } catch (err: any) {
       setErrorMsg(err.message || 'Saving entry failed.');
       setIsSaving(false);
@@ -286,233 +441,273 @@ export default function CapturePage() {
   const availableChapters = activeNotebook?.chapters || [];
 
   return (
-    <main className="relative min-h-screen h-screen bg-black text-white font-sans overflow-hidden flex flex-col justify-between select-none">
-      
-      {/* 1. CAMERA INTERFACE (Step: capture) */}
+    <main className="min-h-screen h-screen bg-[#F9F8F6] font-[Inter,sans-serif] flex flex-col">
+      {/* ============ STEP 1: CAPTURE ============ */}
       {step === 'capture' && (
-        <div className="flex-1 flex flex-col justify-between h-full relative">
-          
-          {/* Top Controls Overlay */}
-          <header className="px-6 py-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent z-10">
+        <div className="flex-1 flex flex-col h-full">
+          {/* Header */}
+          <header className="px-5 py-4 flex items-center justify-between bg-white border-b border-[#1C1C1C]/10 shrink-0">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold tracking-widest text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
-                LITE-CAMERA
+              <div
+                role="img"
+                aria-label="DocuNotes logo"
+                className="w-6 h-6 bg-[#1C1C1C] shrink-0"
+                style={{
+                  WebkitMaskImage: 'url(/DocuNotesLogo.png)',
+                  maskImage: 'url(/DocuNotesLogo.png)',
+                  WebkitMaskSize: 'contain',
+                  maskSize: 'contain',
+                  WebkitMaskRepeat: 'no-repeat',
+                  maskRepeat: 'no-repeat',
+                  WebkitMaskPosition: 'center',
+                  maskPosition: 'center',
+                }}
+              />
+              <span className="text-sm font-bold text-[#1C1C1C] font-['Source_Serif_4',serif]">
+                DocuNotes
               </span>
             </div>
-            <div className="flex gap-4">
-              <button
-                onClick={handleLogout}
-                className="text-xs font-semibold text-gray-400 hover:text-white"
-              >
-                Log Out
-              </button>
-            </div>
+            <button
+              onClick={handleLogout}
+              aria-label="Log out"
+              className="w-9 h-9 rounded-md border border-[#1C1C1C]/10 flex items-center justify-center text-[#797676] hover:text-[#1C1C1C] hover:bg-[#F9F8F6] transition-all duration-200 ease-out cursor-pointer"
+            >
+              <LogOutIcon className="w-4 h-4" />
+            </button>
           </header>
 
-          {/* Viewfinder Placeholder (US Letter Aspect Ratio 8.5 x 11) */}
-          <div className="flex-1 flex flex-col justify-center items-center relative px-8">
-            <div 
+          {/* Viewfinder */}
+          <div className="flex-1 flex flex-col justify-center items-center px-2 py-2 min-h-0">
+            <div
               onClick={() => fileInputRef.current?.click()}
-              className="border border-white/20 hover:border-indigo-500/40 w-full aspect-[8.5/11] max-h-[50vh] rounded-2xl flex flex-col items-center justify-center relative overflow-hidden bg-zinc-950/60 shadow-lg cursor-pointer transition-all duration-300 group"
+              className="relative w-full max-w-md aspect-[8.5/11] max-h-[60vh] rounded-xl border-2 border-dashed border-[#8E8E93]/50 hover:border-[#1C1C1C] bg-white flex flex-col items-center justify-center overflow-hidden cursor-pointer transition-all duration-300 ease-out shadow-md"
             >
-              {/* Camera Grid Lines */}
-              <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none">
-                <div className="border-r border-b border-white/5" />
-                <div className="border-r border-b border-white/5" />
-                <div className="border-b border-white/5" />
-                <div className="border-r border-b border-white/5" />
-                <div className="border-r border-b border-white/5" />
-                <div className="border-b border-white/5" />
-                <div className="border-r border-white/5" />
-                <div className="border-r border-white/5" />
-                <div className="border-none" />
-              </div>
-
-              {/* Viewfinder text banner */}
-              <span className="text-[10px] text-gray-500 group-hover:text-gray-300 font-bold uppercase tracking-widest absolute top-3 transition-colors">
-                Tap to Open Camera (Letter Size)
-              </span>
 
               {stagedImages.length > 0 ? (
                 <img
                   src={stagedImages[stagedImages.length - 1].previewUrl}
                   alt="Last captured page"
-                  className="w-full h-full object-cover rounded-xl"
+                  className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="text-center text-zinc-700 group-hover:text-zinc-500 px-6 transition-colors">
-                  <svg className="w-12 h-12 mx-auto mb-2 text-zinc-800 group-hover:text-zinc-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  </svg>
-                  <p className="text-xs font-semibold">Tap here to scan document page</p>
+                <div className="text-center px-8">
+                  <div className="w-14 h-14 rounded-md bg-[#F9F8F6] border border-[#1C1C1C]/10 flex items-center justify-center mx-auto mb-4">
+                    <CameraIcon className="w-6 h-6 text-[#1C1C1C]" />
+                  </div>
+                  <p className="text-sm font-bold text-[#1C1C1C]">Tap to scan a page</p>
+                  <p className="text-xs text-[#8E8E93] mt-1">Letter-size documents work best</p>
                 </div>
               )}
 
               {errorMsg && (
-                <div className="absolute bottom-4 left-4 right-4 p-2 bg-rose-500/80 rounded-lg text-[10px] text-center font-bold">
+                <div className="absolute bottom-3 left-3 right-3 p-2.5 bg-[#B3261E] rounded-md text-[11px] text-center font-semibold text-white">
                   {errorMsg}
                 </div>
               )}
 
               {isProcessing && (
-                <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-3">
-                  <svg className="animate-spin h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  <span className="text-xs font-semibold text-indigo-300">Reading Handwritings...</span>
+                <div className="absolute inset-0 bg-white/95 flex flex-col items-center justify-center gap-3">
+                  <Spinner className="w-8 h-8 text-[#1C1C1C]" />
+                  <span className="text-xs font-semibold text-[#1C1C1C]">Reading handwriting…</span>
                 </div>
               )}
             </div>
+
+            {/* Viewfinder Toolbar Controls */}
+            {stagedImages.length > 0 && (
+              <div className="flex items-center gap-2 mt-4 text-[11px] font-semibold">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    rotateLastImage();
+                  }}
+                  className="px-3 py-1.5 rounded-md bg-white border border-[#1C1C1C]/15 hover:bg-[#F9F8F6] text-[#1C1C1C] cursor-pointer"
+                >
+                  Rotate 90°
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    cropLastImage();
+                  }}
+                  className="px-3 py-1.5 rounded-md bg-white border border-[#1C1C1C]/15 hover:bg-[#F9F8F6] text-[#1C1C1C] cursor-pointer"
+                >
+                  Crop to Letter
+                </button>
+
+              </div>
+            )}
           </div>
 
-          {/* Camera Controls Panel */}
-          <div className="bg-black px-6 pb-8 pt-4 flex flex-col justify-end space-y-6">
-            
-            {/* 1. Camera Mode Slider (New Entry vs Append) */}
-            <div className="flex justify-center items-center gap-6 text-xs font-bold tracking-widest text-zinc-500 relative">
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              multiple
+              ref={fileInputRef}
+              onChange={handleImageCapture}
+              className="hidden"
+            />
+
+          {/* Bottom control panel */}
+          <div className="bg-white border-t border-[#1C1C1C]/10 px-5 pt-4 pb-6 space-y-4 shrink-0">
+            {/* Mode toggle */}
+            <div className="flex justify-center items-center gap-6 text-sm">
               <button
                 type="button"
                 onClick={() => setTargetMode('new')}
-                className={`transition-colors py-1 ${targetMode === 'new' ? 'text-indigo-400 font-extrabold' : 'hover:text-zinc-300'}`}
+                className={`pb-1 border-b-2 font-semibold transition-all duration-200 ease-out cursor-pointer ${
+                  targetMode === 'new'
+                    ? 'border-[#1C1C1C] text-[#1C1C1C]'
+                    : 'border-transparent text-[#8E8E93] hover:text-[#1C1C1C]'
+                }`}
               >
-                NEW NOTE
+                New Note
               </button>
               <button
                 type="button"
                 onClick={() => setTargetMode('append')}
-                className={`transition-colors py-1 ${targetMode === 'append' ? 'text-indigo-400 font-extrabold' : 'hover:text-zinc-300'}`}
+                className={`pb-1 border-b-2 font-semibold transition-all duration-200 ease-out cursor-pointer ${
+                  targetMode === 'append'
+                    ? 'border-[#1C1C1C] text-[#1C1C1C]'
+                    : 'border-transparent text-[#8E8E93] hover:text-[#1C1C1C]'
+                }`}
               >
-                APPEND
+                Append
               </button>
             </div>
 
             {targetMode === 'append' && (
-              <div className="animate-fade-in w-full max-w-xs mx-auto">
-                <select
-                  value={targetEntryId}
-                  onChange={(e) => setTargetEntryId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-white/10 text-white text-xs focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="">-- Append to which Entry? --</option>
-                  {existingEntries.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <select
+                value={targetEntryId}
+                onChange={(e) => setTargetEntryId(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-md bg-[#F9F8F6] border border-[#8E8E93]/30 text-[#1C1C1C] text-xs focus:outline-none focus:border-[#1C1C1C] transition-all duration-200 ease-out"
+              >
+                <option value="">-- Append to which entry? --</option>
+                {existingEntries.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.title}
+                  </option>
+                ))}
+              </select>
             )}
 
-            {/* 2. Controls */}
-            <div className="flex justify-between items-center max-w-xs w-full mx-auto">
-              
-              {/* Left Button: Gallery Thumbnail Preview */}
-              <div className="w-12 h-12 flex items-center justify-center">
+            {/* Staged pages chip */}
+            <button
+              onClick={() => stagedImages.length > 0 && setShowStagedDrawer(true)}
+              disabled={stagedImages.length === 0}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md bg-[#F9F8F6] border border-[#1C1C1C]/10 text-left disabled:opacity-60 hover:bg-white transition-all duration-200 ease-out cursor-pointer disabled:cursor-default"
+            >
+              <div className="w-9 h-9 rounded-md bg-white border border-[#1C1C1C]/10 flex items-center justify-center shrink-0 overflow-hidden">
                 {stagedImages.length > 0 ? (
-                  <button
-                    onClick={() => setShowStagedDrawer(true)}
-                    className="relative w-11 h-11 rounded-full border border-white/20 overflow-hidden active:scale-95 transition-transform"
-                  >
-                    <img
-                      src={stagedImages[stagedImages.length - 1].previewUrl}
-                      alt="Last page thumbnail"
-                      className="w-full h-full object-cover"
-                    />
-                    <span className="absolute -top-1 -right-1 bg-indigo-500 text-white text-[9px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border border-black shadow">
-                      {stagedImages.length}
-                    </span>
-                  </button>
+                  <img
+                    src={stagedImages[stagedImages.length - 1].previewUrl}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
-                  <div className="w-11 h-11 rounded-full bg-zinc-900 border border-white/5" />
+                  <ImagesIcon className="w-4 h-4 text-[#8E8E93]" />
                 )}
               </div>
+              <span className="text-xs font-semibold text-[#1C1C1C] flex-1">
+                {stagedImages.length === 0
+                  ? 'No pages captured yet'
+                  : `${stagedImages.length} page${stagedImages.length > 1 ? 's' : ''} staged — review order`}
+              </span>
+            </button>
 
-              {/* Center status message */}
-              <div className="text-[10px] text-zinc-600 font-semibold tracking-wider text-center uppercase">
-                Tap paper to scan
-              </div>
-
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                multiple
-                ref={fileInputRef}
-                onChange={handleImageCapture}
-                className="hidden"
-              />
-
-              {/* Right Button: Process Checkmark */}
-              <div className="w-12 h-12 flex items-center justify-center">
-                <button
-                  onClick={processCapturedPages}
-                  disabled={stagedImages.length === 0 || isProcessing}
-                  className="w-11 h-11 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center hover:bg-indigo-500/30 text-indigo-400 disabled:opacity-20 transition-all cursor-pointer"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                </button>
-              </div>
-
+            {/* Primary actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isProcessing}
+                className="flex-1 py-3.5 rounded-md border border-[#1C1C1C]/15 text-[#1C1C1C] text-sm font-semibold flex items-center justify-center gap-2 hover:bg-[#F9F8F6] disabled:opacity-30 transition-all duration-200 ease-out cursor-pointer disabled:cursor-default"
+              >
+                <CameraIcon className="w-4 h-4" />
+                Add Page
+              </button>
+              <button
+                onClick={processCapturedPages}
+                disabled={stagedImages.length === 0 || isProcessing}
+                className="flex-[2] py-3.5 rounded-md bg-[#1C1C1C] text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-30 hover:opacity-90 transition-all duration-200 ease-out cursor-pointer disabled:cursor-default"
+              >
+                {isProcessing ? (
+                  <>
+                    <Spinner className="w-4 h-4" />
+                    Processing…
+                  </>
+                ) : (
+                  <>
+                    <CheckIcon className="w-4 h-4" />
+                    Process {stagedImages.length > 0 ? `${stagedImages.length} Page${stagedImages.length > 1 ? 's' : ''}` : 'Pages'}
+                  </>
+                )}
+              </button>
             </div>
           </div>
 
-          {/* Bottom staged review sheet drawer */}
+          {/* Staged review drawer */}
           {showStagedDrawer && (
-            <div className="fixed inset-0 z-30 bg-black/90 backdrop-blur-sm flex flex-col justify-end">
-              <div className="bg-zinc-950 border-t border-white/10 rounded-t-3xl p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+            <div className="fixed inset-0 z-30 bg-[#1C1C1C]/40 backdrop-blur-sm flex flex-col justify-end">
+              <div className="bg-white border-t border-[#1C1C1C]/10 rounded-t-md p-5 space-y-4 max-h-[70vh] overflow-y-auto">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-sm font-bold text-gray-300">Staged Pages ({stagedImages.length})</h3>
+                  <h3 className="text-sm font-bold text-[#1C1C1C] font-['Source_Serif_4',serif]">
+                    Staged Pages ({stagedImages.length})
+                  </h3>
                   <button
                     onClick={() => setShowStagedDrawer(false)}
-                    className="text-xs text-indigo-400 font-semibold"
+                    className="px-3 py-1.5 rounded-md bg-[#1C1C1C] text-white text-xs font-semibold hover:opacity-90 transition-all duration-200 ease-out cursor-pointer"
                   >
                     Done
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2.5">
                   {stagedImages.map((img, index) => (
                     <div
                       key={img.id}
-                      className="relative bg-zinc-900 border border-white/5 rounded-xl p-2 flex flex-col justify-between"
+                      className="flex items-center gap-3 p-3 bg-[#F9F8F6] border border-[#1C1C1C]/10 rounded-md"
                     >
-                      <img
-                        src={img.previewUrl}
-                        alt={`Page preview ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-lg"
-                      />
-                      <span className="absolute top-4 left-4 bg-black/60 px-1.5 py-0.5 rounded text-[8px] font-bold">
-                        Page {index + 1}
-                      </span>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="text-[9px] text-zinc-500">
-                          {img.compressedSizeKb}KB
+                      <div className="relative w-12 h-16 rounded-md overflow-hidden border border-[#1C1C1C]/10 shrink-0">
+                        <img
+                          src={img.previewUrl}
+                          alt={`Page preview ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <span className="absolute top-1 left-1 bg-[#1C1C1C] text-white text-[9px] font-bold px-1 rounded-sm">
+                          {index + 1}
                         </span>
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => moveImage(index, 'up')}
-                            disabled={index === 0}
-                            className="p-1 rounded bg-white/5 text-gray-400 disabled:opacity-20"
-                          >
-                            &larr;
-                          </button>
-                          <button
-                            onClick={() => moveImage(index, 'down')}
-                            disabled={index === stagedImages.length - 1}
-                            className="p-1 rounded bg-white/5 text-gray-400 disabled:opacity-20"
-                          >
-                            &rarr;
-                          </button>
-                          <button
-                            onClick={() => removeStagedImage(img.id)}
-                            className="p-1 rounded bg-rose-500/10 text-rose-400"
-                          >
-                            &times;
-                          </button>
-                        </div>
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-[#1C1C1C]">Page {index + 1}</p>
+                        <p className="text-[10px] text-[#8E8E93]">{img.compressedSizeKb}KB</p>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => moveImage(index, 'up')}
+                          disabled={index === 0}
+                          aria-label="Move earlier"
+                          className="w-8 h-8 rounded-md border border-[#1C1C1C]/10 bg-white flex items-center justify-center text-[#797676] hover:text-[#1C1C1C] disabled:opacity-25 transition-all duration-200 ease-out cursor-pointer"
+                        >
+                          <ChevronUpIcon className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => moveImage(index, 'down')}
+                          disabled={index === stagedImages.length - 1}
+                          aria-label="Move later"
+                          className="w-8 h-8 rounded-md border border-[#1C1C1C]/10 bg-white flex items-center justify-center text-[#797676] hover:text-[#1C1C1C] disabled:opacity-25 transition-all duration-200 ease-out cursor-pointer"
+                        >
+                          <ChevronDownIcon className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => removeStagedImage(img.id)}
+                          aria-label="Remove page"
+                          className="w-8 h-8 rounded-md bg-[#B3261E] flex items-center justify-center text-white hover:opacity-90 transition-all duration-200 ease-out cursor-pointer"
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -520,47 +715,53 @@ export default function CapturePage() {
               </div>
             </div>
           )}
-
         </div>
       )}
 
-      {/* 2. AI REVIEW SCREEN (Step: review) */}
+      {/* ============ STEP 2: AI REVIEW ============ */}
       {step === 'review' && aiData && (
-        <div className="flex-1 flex flex-col justify-between h-full bg-[#0a0a14] p-5">
-          <header className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-extrabold text-indigo-300">Review AI Tagging</h2>
+        <div className="flex-1 flex flex-col h-full">
+          <header className="px-5 py-4 bg-white border-b border-[#1C1C1C]/10 shrink-0">
+            <h2 className="text-base font-bold text-[#1C1C1C] font-['Source_Serif_4',serif]">
+              Review &amp; Tag
+            </h2>
+            <p className="text-[11px] text-[#8E8E93] mt-0.5">Confirm the details before saving.</p>
           </header>
 
-          <div className="flex-1 space-y-4 overflow-y-auto max-h-[72vh] pr-1">
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
             {errorMsg && (
-              <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/20 text-rose-400 text-xs">
+              <div className="p-3 rounded-md bg-[#F9F8F6] border border-[#B3261E]/30 text-[#B3261E] text-xs font-medium">
                 {errorMsg}
               </div>
             )}
 
             <div>
-              <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1 font-bold ml-1">Title</label>
+              <label className="block text-[10px] text-[#8E8E93] uppercase tracking-wider mb-1.5 font-bold ml-0.5">
+                Title
+              </label>
               <input
                 type="text"
                 required
                 value={formTitle}
                 onChange={(e) => setFormTitle(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl bg-white/[0.02] border border-white/10 text-white text-xs focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2.5 rounded-md bg-[#F9F8F6] border border-[#8E8E93]/30 text-[#1C1C1C] text-sm focus:outline-none focus:border-[#1C1C1C] transition-all duration-200 ease-out"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1.5 font-bold ml-1">Type</label>
+              <label className="block text-[10px] text-[#8E8E93] uppercase tracking-wider mb-1.5 font-bold ml-0.5">
+                Type
+              </label>
               <div className="flex gap-2 text-xs">
-                {['Practice', 'Course Notes', 'Other'].map((type) => (
+                {(['Practice', 'Course Notes', 'Other'] as const).map((type) => (
                   <button
                     key={type}
                     type="button"
-                    onClick={() => setFormType(type as any)}
-                    className={`flex-1 py-2 rounded-lg border transition-all font-semibold ${
+                    onClick={() => setFormType(type)}
+                    className={`flex-1 py-2.5 rounded-md border font-semibold transition-all duration-200 ease-out cursor-pointer ${
                       formType === type
-                        ? 'bg-indigo-500/15 border-indigo-500/50 text-indigo-300'
-                        : 'bg-transparent border-white/10 text-gray-400'
+                        ? 'bg-[#1C1C1C] border-[#1C1C1C] text-white'
+                        : 'bg-white border-[#1C1C1C]/10 text-[#797676] hover:border-[#1C1C1C]/30'
                     }`}
                   >
                     {type}
@@ -570,18 +771,20 @@ export default function CapturePage() {
             </div>
 
             <div>
-              <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1 font-bold ml-1">Notebook</label>
+              <label className="block text-[10px] text-[#8E8E93] uppercase tracking-wider mb-1.5 font-bold ml-0.5">
+                Notebook
+              </label>
               <select
                 value={formNotebookId}
                 onChange={(e) => {
                   setFormNotebookId(e.target.value);
                   setFormChapterId('');
                 }}
-                className="w-full px-3 py-2.5 rounded-xl bg-white/[0.02] border border-white/10 text-white text-xs focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2.5 rounded-md bg-[#F9F8F6] border border-[#8E8E93]/30 text-[#1C1C1C] text-sm focus:outline-none focus:border-[#1C1C1C] transition-all duration-200 ease-out"
               >
-                <option value="" className="bg-[#0e0e1a]">-- Unassigned (None Fit) --</option>
+                <option value="">-- Unassigned (none fit) --</option>
                 {notebooks.map((n) => (
-                  <option key={n.id} value={n.id} className="bg-[#0e0e1a]">
+                  <option key={n.id} value={n.id}>
                     {n.name}
                   </option>
                 ))}
@@ -589,16 +792,18 @@ export default function CapturePage() {
             </div>
 
             <div>
-              <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1 font-bold ml-1">Chapter</label>
+              <label className="block text-[10px] text-[#8E8E93] uppercase tracking-wider mb-1.5 font-bold ml-0.5">
+                Chapter
+              </label>
               <select
                 value={formChapterId}
                 disabled={!formNotebookId}
                 onChange={(e) => setFormChapterId(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl bg-white/[0.02] border border-white/10 text-white text-xs focus:outline-none focus:border-indigo-500 disabled:opacity-40"
+                className="w-full px-3 py-2.5 rounded-md bg-[#F9F8F6] border border-[#8E8E93]/30 text-[#1C1C1C] text-sm focus:outline-none focus:border-[#1C1C1C] disabled:opacity-40 transition-all duration-200 ease-out"
               >
-                <option value="" className="bg-[#0e0e1a]">-- Unassigned --</option>
+                <option value="">-- Unassigned --</option>
                 {availableChapters.map((c: any) => (
-                  <option key={c.id} value={c.id} className="bg-[#0e0e1a]">
+                  <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
                 ))}
@@ -606,57 +811,71 @@ export default function CapturePage() {
             </div>
 
             <div>
-              <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1 font-bold ml-1">Description</label>
+              <label className="block text-[10px] text-[#8E8E93] uppercase tracking-wider mb-1.5 font-bold ml-0.5">
+                Description
+              </label>
               <textarea
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
                 rows={2}
-                className="w-full px-3 py-2.5 rounded-xl bg-white/[0.02] border border-white/10 text-white text-xs focus:outline-none"
+                className="w-full px-3 py-2.5 rounded-md bg-[#F9F8F6] border border-[#8E8E93]/30 text-[#1C1C1C] text-sm focus:outline-none focus:border-[#1C1C1C] transition-all duration-200 ease-out"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1 font-bold ml-1">Skills Demonstrated</label>
+              <label className="block text-[10px] text-[#8E8E93] uppercase tracking-wider mb-1.5 font-bold ml-0.5">
+                Skills Demonstrated
+              </label>
               <textarea
                 value={formSkills}
                 onChange={(e) => setFormSkills(e.target.value)}
                 rows={2}
-                className="w-full px-3 py-2.5 rounded-xl bg-white/[0.02] border border-white/10 text-white text-xs focus:outline-none"
+                className="w-full px-3 py-2.5 rounded-md bg-[#F9F8F6] border border-[#8E8E93]/30 text-[#1C1C1C] text-sm focus:outline-none focus:border-[#1C1C1C] transition-all duration-200 ease-out"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1 font-bold ml-1">Concepts Discussed</label>
+              <label className="block text-[10px] text-[#8E8E93] uppercase tracking-wider mb-1.5 font-bold ml-0.5">
+                Concepts Discussed
+              </label>
               <textarea
                 value={formConcepts}
                 onChange={(e) => setFormConcepts(e.target.value)}
                 rows={2}
-                className="w-full px-3 py-2.5 rounded-xl bg-white/[0.02] border border-white/10 text-white text-xs focus:outline-none"
+                className="w-full px-3 py-2.5 rounded-md bg-[#F9F8F6] border border-[#8E8E93]/30 text-[#1C1C1C] text-sm focus:outline-none focus:border-[#1C1C1C] transition-all duration-200 ease-out"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1 font-bold ml-1">Question Log</label>
+              <label className="block text-[10px] text-[#8E8E93] uppercase tracking-wider mb-1.5 font-bold ml-0.5">
+                Question Log
+              </label>
               <textarea
                 value={formQuestionLog}
                 onChange={(e) => setFormQuestionLog(e.target.value)}
                 rows={2}
-                className="w-full px-3 py-2.5 rounded-xl bg-white/[0.02] border border-white/10 text-white text-xs focus:outline-none"
+                className="w-full px-3 py-2.5 rounded-md bg-[#F9F8F6] border border-[#8E8E93]/30 text-[#1C1C1C] text-sm focus:outline-none focus:border-[#1C1C1C] transition-all duration-200 ease-out"
               />
             </div>
 
             {/* OCR raw text blocks */}
-            <div className="space-y-2 pt-2 border-t border-white/5">
-              <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Extracted Text</h3>
+            <div className="space-y-2 pt-3 border-t border-[#1C1C1C]/10">
+              <h3 className="text-[10px] font-bold text-[#8E8E93] uppercase tracking-wider ml-0.5">
+                Extracted Text
+              </h3>
               {rawTexts.map((text, idx) => (
-                <div key={idx} className="bg-white/[0.01] border border-white/5 rounded-xl overflow-hidden text-xs">
+                <div key={idx} className="bg-white border border-[#1C1C1C]/10 rounded-md overflow-hidden">
                   <button
                     type="button"
                     onClick={() => setExpandedRawTextIndex(expandedRawTextIndex === idx ? null : idx)}
-                    className="w-full px-4 py-2.5 text-left font-semibold flex justify-between items-center"
+                    className="w-full px-4 py-3 text-left text-xs font-semibold text-[#1C1C1C] flex justify-between items-center cursor-pointer"
                   >
                     <span>Page {idx + 1} OCR Raw</span>
-                    <span>{expandedRawTextIndex === idx ? '▲' : '▼'}</span>
+                    {expandedRawTextIndex === idx ? (
+                      <ChevronUpIcon className="w-3.5 h-3.5 text-[#797676]" />
+                    ) : (
+                      <ChevronDownIcon className="w-3.5 h-3.5 text-[#797676]" />
+                    )}
                   </button>
                   {expandedRawTextIndex === idx && (
                     <textarea
@@ -667,7 +886,7 @@ export default function CapturePage() {
                         setRawTexts(newTexts);
                       }}
                       rows={4}
-                      className="w-full px-4 py-3 bg-[#0d0d19] border-t border-white/5 text-xs text-gray-300 focus:outline-none leading-relaxed"
+                      className="w-full px-4 py-3 bg-[#F9F8F6] border-t border-[#1C1C1C]/10 text-xs text-[#1C1C1C] focus:outline-none leading-relaxed"
                     />
                   )}
                 </div>
@@ -675,22 +894,30 @@ export default function CapturePage() {
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4 border-t border-white/5 mt-4">
+          {/* Bottom actions */}
+          <div className="flex gap-3 px-5 py-4 border-t border-[#1C1C1C]/10 bg-white shrink-0">
             <button
               onClick={() => {
                 setStep('capture');
                 setAiData(null);
               }}
-              className="flex-1 py-3 rounded-xl border border-white/10 text-xs font-semibold"
+              className="flex-1 py-3 rounded-md border border-[#1C1C1C]/15 text-[#1C1C1C] text-sm font-semibold hover:bg-[#F9F8F6] transition-all duration-200 ease-out cursor-pointer"
             >
-              Back to Camera
+              Back
             </button>
             <button
               onClick={handleSaveEntry}
               disabled={isSaving}
-              className="flex-2 py-3 rounded-xl bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-xs font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all flex justify-center items-center"
+              className="flex-[2] py-3 rounded-md bg-[#1C1C1C] text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 hover:opacity-90 transition-all duration-200 ease-out cursor-pointer"
             >
-              {isSaving ? 'Filing Entry...' : 'Save & File'}
+              {isSaving ? (
+                <>
+                  <Spinner className="w-4 h-4" />
+                  Filing Entry…
+                </>
+              ) : (
+                'Save & File'
+              )}
             </button>
           </div>
         </div>

@@ -20,7 +20,7 @@ export async function listActiveNotebooks() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('notebooks')
-    .select('*, chapters(count), entries(count)')
+    .select('*, chapters(id, name, position, created_at), entries(id)')
     .eq('status', 'active')
     .order('created_at', { ascending: false });
 
@@ -32,7 +32,7 @@ export async function listArchivedNotebooks() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('notebooks')
-    .select('*, chapters(count), entries(count)')
+    .select('*, chapters(id, name, position, created_at), entries(id)')
     .eq('status', 'archived')
     .order('created_at', { ascending: false });
 
